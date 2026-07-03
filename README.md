@@ -451,55 +451,55 @@ If the book is available, it should be issued, and the status in the books table
 If the book is not available (status = 'no'), the procedure should return an error message indicating that the book is currently not available.
 
 ```sql
+DELIMITER $$
+create procedure issued_book(
+		p_issued_id varchar(10),
+		p_issued_member_id varchar(10),
+        p_issued_book_isbn varchar(25),
+        p_issued_emp_id varchar(10)
+)
+begin
+	declare v_status varchar(10);
+	-- first check if book status is 'yes'
+	select 
+	status
+	into
+	v_status
+	from books
+	where isbn = p_issued_book_isbn;
+	
+    if v_status = 'yes' then 
+		insert into issued_status(issued_id, 
+						issued_member_id, 
+						issued_date, 
+						issued_book_isbn,
+						issued_emp_id
+				)
+				
+		values  (p_issued_id, 
+				p_issued_member_id,
+				current_date(),
+				p_issued_book_isbn,
+				p_issued_emp_id 
+			);
+            
+		 -- Update book status
+			UPDATE books
+			SET status = 'No'
+			WHERE isbn = p_issued_book_isbn;
+            
+		-- message display
+        select concat('book record addeed successfully for book  isbn: %', p_issued_book_isbn);
+	
+    else 
+    -- message display
+        select concat('requested book is unavailable for book isbn %', p_issued_book_isbn);
+   end if;
+   
+end;
 
-CREATE OR REPLACE PROCEDURE issue_book(p_issued_id VARCHAR(10), p_issued_member_id VARCHAR(30), p_issued_book_isbn VARCHAR(30), p_issued_emp_id VARCHAR(10))
-LANGUAGE plpgsql
-AS $$
-
-DECLARE
--- all the variabable
-    v_status VARCHAR(10);
-
-BEGIN
--- all the code
-    -- checking if book is available 'yes'
-    SELECT 
-        status 
-        INTO
-        v_status
-    FROM books
-    WHERE isbn = p_issued_book_isbn;
-
-    IF v_status = 'yes' THEN
-
-        INSERT INTO issued_status(issued_id, issued_member_id, issued_date, issued_book_isbn, issued_emp_id)
-        VALUES
-        (p_issued_id, p_issued_member_id, CURRENT_DATE, p_issued_book_isbn, p_issued_emp_id);
-
-        UPDATE books
-            SET status = 'no'
-        WHERE isbn = p_issued_book_isbn;
-
-        RAISE NOTICE 'Book records added successfully for book isbn : %', p_issued_book_isbn;
-
-
-    ELSE
-        RAISE NOTICE 'Sorry to inform you the book you have requested is unavailable book_isbn: %', p_issued_book_isbn;
-    END IF;
-END;
-$$
-
--- Testing The function
-SELECT * FROM books;
--- "978-0-553-29698-2" -- yes
--- "978-0-375-41398-8" -- no
-SELECT * FROM issued_status;
-
-CALL issue_book('IS155', 'C108', '978-0-553-29698-2', 'E104');
-CALL issue_book('IS156', 'C108', '978-0-375-41398-8', 'E104');
-
-SELECT * FROM books
-WHERE isbn = '978-0-375-41398-8'
+-- testing:
+call issued_book('IS135', 'C108','978-0-06-025492-6', 'E104');
 
 ```
 
